@@ -1,4 +1,4 @@
-;;; flycheck-hdevtools.el --- A flycheck checker for Haskell using hdevtools
+;;; flycheck-hdevtools.el --- A flycheck checker for Haskell using hdevtools -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2013  Steve Purcell
 
@@ -35,11 +35,34 @@
 
 (require 'flycheck)
 
+;; You may want a this package.
+;; (require 'flycheck-haskell)
+
+(defun flycheck-option-with-g-flag (opt param)
+  "Return OPT and PARAM with -g frags."
+  (list "-g" opt "-g" param))
+
+(defun flycheck-concat-option-with-g-flag (opt param)
+  "Return concatenated OPT and PARAM with -g frag."
+  (list "-g" (concat opt param)))
+
 (flycheck-define-checker haskell-hdevtools
   "A Haskell syntax and type checker using hdevtools.
 
 See URL `https://github.com/bitc/hdevtools'."
-  :command ("hdevtools" "check" "-g" "-Wall" source-inplace)
+  :command ("hdevtools" "check" "-g" "-Wall"
+
+            (option-flag "-g" flycheck-ghc-no-user-package-database)
+            (option-flag "-no-user-package-db" flycheck-ghc-no-user-package-database)
+
+            (option-list "-package-db" flycheck-ghc-package-databases flycheck-option-with-g-flag)
+
+            "-g" (eval (concat "-i" (flycheck-module-root-directory
+                                     (flycheck-find-in-buffer flycheck-haskell-module-re))))
+
+            (option-list "-i" flycheck-ghc-search-path flycheck-concat-option-with-g-flag)
+
+            source-inplace)
   :error-patterns
   ((warning line-start (file-name) ":" line ":" column ":"
             (or " " "\n    ") "Warning:" (optional "\n")
